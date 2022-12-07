@@ -4,7 +4,7 @@ import json
 import os
 
 print("** Loading API Key")
-ai.api_key = os.getenv("OPENAI_API_KEY")
+ai.api_key = os.environ.get("OPENAI_API_KEY")
 model_used = "text-davinci-002"
 
 app = Flask(__name__)
