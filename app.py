@@ -3,7 +3,7 @@ import openai as ai
 import json
 
 print("** Loading API Key")
-ai.api_key = "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"
+ai.api_key = "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"
 model_used = "text-davinci-002"
 
 app = Flask(__name__)
@@ -13,6 +13,7 @@ app = Flask(__name__)
 def hello_world():
     # company_name = input("Company Name: "/)
     body = request.get_json()
+    print(body)
     project_title = body["project_title"]
     contact_person = body["contact_person"]
     your_name = body["your_name"]
