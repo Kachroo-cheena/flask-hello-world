@@ -1,134 +1,44 @@
 from flask import Flask, jsonify, request, render_template, redirect
-# Importing all necessary libraries
-import cv2
-import os
-import tensorflow as tf
-import tensorflow_hub as hub
-from PIL import Image
-import pandas as pd
-import numpy as np
-import sys
-from scipy.spatial import distance
+import openai as ai
 import json
-import pickle
-import os
 
-
-metric = 'cosine'
-
-model_url = "https://tfhub.dev/tensorflow/efficientnet/lite0/feature-vector/2"
-
-IMAGE_SHAPE = (224, 224)
-
-layer = hub.KerasLayer(model_url)
-model = tf.keras.Sequential([layer])
+print("** Loading API Key")
+ai.api_key = "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"
+model_used = "text-davinci-002"
 
 app = Flask(__name__)
-
-app.config["IMAGE_UPLOADS"] = os.getcwd()+"/uploads"
-
-
-def get_video_metadata(image_to_find):
-    threshold = 0.5
-    image_to_find = extract(image_to_find)
-    filehandler = open('vectors.obj', 'rb')
-    temp = pickle.load(filehandler)
-    # prin?t(temp)
-    return (find_minimum_distance_with_image(temp, image_to_find, threshold))
-
-
-def find_minimum_distance_with_image(video_dic, image_to_find, threshold):
-    dist_dic = {}
-    for vd in video_dic:
-        video_1 = video_dic[vd]
-        temp_video_1 = []
-        for i in video_1:
-            temp_video_1.append(distance.cdist(
-                [i], [image_to_find], metric)[0][0])
-        video_1_min = min(temp_video_1)
-        dist_dic[vd] = video_1_min
-    for i in dist_dic:
-        if dist_dic[i] <= threshold:
-            return i
-
-
-def convert_to_vectors(filename):
-    filename = filename.split(".")[0]
-    video_1_temp = os.listdir('data/{}/'.format(filename))
-    video_1 = []
-    for i in video_1_temp:
-        video_1.append(extract('data/{}/'.format(filename)+i))
-    return video_1
-
-
-def extract(file):
-    file = Image.open(file).convert('L').resize(IMAGE_SHAPE)
-    # display(file)
-    file = np.stack((file,)*3, axis=-1)
-    file = np.array(file)/255.0
-    embedding = model.predict(file[np.newaxis, ...])
-    vgg16_feature_np = np.array(embedding)
-    flattended_feature = vgg16_feature_np.flatten()
-    return flattended_feature
-
-
-def convert_to_frames(filename):
-    os.system("ffmpeg -i {0} -filter:v fps=10 {1}".format(filename,
-              filename.split('.')[0]+"_changed.mp4"))
-    filename = filename.split(".")[0]
-    cam = cv2.VideoCapture("{}_changed.mp4".format(filename))
-    cam.set(cv2.CAP_PROP_FPS, 10)
-    try:
-
-        # creating a folder named data
-        if not os.path.exists('data/{}'.format(filename)):
-            os.makedirs('data/{}'.format(filename))
-
-    # if not created then raise error
-    except OSError:
-        print('Error: Creating directory of data')
-
-    # frame
-    currentframe = 0
-
-    while (True):
-
-        # reading from frame
-        ret, frame = cam.read()
-
-        if ret:
-            # if video is still left continue creating images
-            name = './data/{}/frame'.format(filename) + \
-                str(currentframe) + '.jpg'
-            print('Creating...' + name)
-
-            # writing the extracted images
-            cv2.imwrite(name, frame)
-
-            # increasing counter so that it will
-            # show how many frames are created
-            currentframe += 1
-        else:
-            break
-
-    # Release all space and windows once done
-    cam.release()
-    cv2.destroyAllWindows()
 
 
 @app.route('/', methods=['POST'])
 def hello_world():
-    if request.method == "POST":
-        print("JDSHGJHGJHDSGJDHS")
-        if request.files:
-            print("dfjhbjhbj")
-            image = request.files["image"]
-            print(image)
-            image.save(os.path.join(
-                app.config["IMAGE_UPLOADS"], image.filename))
-            temp = (get_video_metadata(os.path.join(
-                app.config["IMAGE_UPLOADS"], image.filename)))
-            if temp == None:
-                return "No Videos Found"
-            else:
-                return temp
+    # company_name = input("Company Name: "/)
+    body = request.get_json()
+    project_title = body["project_title"]
+    contact_person = body["contact_person"]
+    your_name = body["your_name"]
+    price_per_hour = str(body["price_per_hour"])
+
+    prompt = ("Write a cover letter to "+contact_person+" from "+your_name+" for the project " +
+              project_title + ". My best quotation would me "+price_per_hour + " per hour.")
+
+    # print(prompt)
+    response = ai.Completion.create(
+        engine=model_used,
+        # engine="text-davinci-002", # OpenAI has made four text completion engines available, named davinci, ada, babbage and curie. We are using davinci, which is the most capable of the four.
+        prompt=prompt,  # The text file we use as input (step 3)
+        # how many maximum characters the text will consists of.
+        max_tokens=int(1949),
+        temperature=0.99,
+        # temperature=int(temperature), # a number between 0 and 1 that determines how many creative risks the engine takes when generating text.,
+        # an alternative way to control the originality and creativity of the generated text.
+        top_p=int(1),
+        n=1,  # number of predictions to generate
+        # a number between 0 and 1. The higher this value the model will make a bigger effort in not repeating itself.
+        frequency_penalty=0.9,
+        # a number between 0 and 1. The higher this value the model will make a bigger effort in talking about new topics.
+        presence_penalty=0.9
+    )
+
+    text = response['choices'][0]['text']
+
+    return {"Prompt": prompt, "Response": text}
