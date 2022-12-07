@@ -1,9 +1,10 @@
 from flask import Flask, jsonify, request, render_template, redirect
 import openai as ai
 import json
+import os
 
 print("** Loading API Key")
-ai.api_key = "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"
+ai.api_key = os.getenv("OPENAI_API_KEY")
 model_used = "text-davinci-002"
 
 app = Flask(__name__)
