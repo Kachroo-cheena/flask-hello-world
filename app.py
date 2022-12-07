@@ -132,7 +132,3 @@ def hello_world():
                 return "No Videos Found"
             else:
                 return temp
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
