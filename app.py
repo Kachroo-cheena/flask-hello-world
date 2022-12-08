@@ -10,10 +10,11 @@ model_used = "text-davinci-002"
 app = Flask(__name__)
 
 
-@app.route('/', methods=['POST'])
-def hello_world():
-    # company_name = input("Company Name: "/)
-    body = request.get_json()
+@app.route('/generate',methods=["POST"])
+def generate():
+    print(request.form)
+    # return(request.form)
+    body = request.form
     print(body)
     project_title = body["project_title"]
     contact_person = body["contact_person"]
@@ -21,7 +22,7 @@ def hello_world():
     price_per_hour = str(body["price_per_hour"])
 
     prompt = ("Write a cover letter to "+contact_person+" from "+your_name+" for the project " +
-              project_title + ". My best quotation would me "+price_per_hour + " per hour.")
+            project_title + ". My best quotation would me "+price_per_hour + " per hour.")
 
     # print(prompt)
     response = ai.Completion.create(
@@ -43,4 +44,8 @@ def hello_world():
 
     text = response['choices'][0]['text']
 
-    return {"Prompt": prompt, "Response": text}
+    return render_template("output.html",response=text)
+
+@app.route('/')
+def hello_world():
+    return render_template("home.html")
